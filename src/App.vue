@@ -1,162 +1,221 @@
 <template>
-  <div class="app">
-    <header class="header">
-      <h1>
-        <i class="bike-icon">🚲</i>
-        YouBike 站點查詢系統
-      </h1>
-    </header>
+  <div class="min-h-screen gradient-bg">
+    <!-- 導航欄 -->
+    <div class="navbar glass-card shadow-lg mb-6">
+      <div class="navbar-start">
+        <h1 class="text-2xl font-bold text-primary flex items-center gap-3">
+          <span class="text-3xl bike-icon-animate">🚲</span>
+          YouBike 站點查詢系統
+        </h1>
+      </div>
+      <div class="navbar-end">
+        <div class="flex items-center gap-2">
+          <span class="text-sm opacity-70">收藏站點：</span>
+          <div class="badge badge-primary">{{ favoriteStations.length }}</div>
+          <button 
+            @click="showFavoritesOnly = !showFavoritesOnly" 
+            class="btn btn-sm btn-outline"
+            :class="showFavoritesOnly ? 'btn-primary' : ''"
+          >
+            <span class="text-lg">{{ showFavoritesOnly ? '💙' : '🤍' }}</span>
+            {{ showFavoritesOnly ? '顯示全部' : '只看收藏' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
-    <main class="main-content">
-      <div class="search-section">
-        <div class="search-controls">
-          <div class="input-group">
-            <input 
-              v-model="searchKeyword" 
-              type="text" 
-              placeholder="搜尋站點名稱..."
-              class="search-input"
-              @input="filterStations"
-            >
-            <button @click="clearSearch" class="clear-btn" v-if="searchKeyword">
-              ✕
-            </button>
-          </div>
-          
-          <div class="filter-group">
-            <select v-model="selectedArea" @change="filterStations" class="area-select">
-              <option value="">所有區域</option>
-              <option v-for="area in areas" :key="area" :value="area">
-                {{ area }}
-              </option>
-            </select>
+    <main class="container mx-auto px-4 max-w-7xl">
+      <!-- 搜尋和統計區域 -->
+      <div class="card glass-card shadow-xl mb-6">
+        <div class="card-body">
+          <!-- 搜尋控制 -->
+          <div class="flex flex-wrap gap-4 mb-6">
+            <div class="form-control flex-1 min-w-64">
+              <div class="input-group">
+                <input 
+                  v-model="searchKeyword" 
+                  type="text" 
+                  placeholder="搜尋站點名稱或地址..."
+                  class="input input-bordered w-full"
+                  @input="filterStations"
+                >
+                <button 
+                  v-if="searchKeyword" 
+                  @click="clearSearch" 
+                  class="btn btn-square btn-outline"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
             
-            <button @click="refreshData" class="refresh-btn" :disabled="loading">
-              <span v-if="loading">⟳</span>
-              <span v-else>🔄</span>
+            <div class="form-control">
+              <select v-model="selectedArea" @change="filterStations" class="select select-bordered">
+                <option value="">所有區域</option>
+                <option v-for="area in areas" :key="area" :value="area">
+                  {{ area }}
+                </option>
+              </select>
+            </div>
+            
+            <button @click="refreshData" class="btn btn-primary" :disabled="loading">
+              <span v-if="loading" class="loading loading-spinner loading-sm"></span>
+              <span v-else class="text-lg">🔄</span>
               {{ loading ? '更新中...' : '重新整理' }}
             </button>
           </div>
-        </div>
 
-        <div class="stats">
-          <div class="stat-item">
-            <span class="stat-number">{{ filteredStations.length }}</span>
-            <span class="stat-label">站點數量</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number">{{ totalBikes }}</span>
-            <span class="stat-label">可借車輛</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number">{{ totalSpaces }}</span>
-            <span class="stat-label">可還空位</span>
+          <!-- 統計資訊 -->
+          <div class="stats shadow">
+            <div class="stat">
+              <div class="stat-figure text-primary text-3xl">📍</div>
+              <div class="stat-title">站點數量</div>
+              <div class="stat-value text-primary">{{ filteredStations.length }}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-figure text-success text-3xl">🚲</div>
+              <div class="stat-title">可借車輛</div>
+              <div class="stat-value text-success">{{ totalBikes }}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-figure text-info text-3xl">🅿️</div>
+              <div class="stat-title">可還空位</div>
+              <div class="stat-value text-info">{{ totalSpaces }}</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="stations-section">
-        <div v-if="loading" class="loading">
-          <div class="loading-spinner"></div>
-          <p>載入站點資料中...</p>
+      <!-- 載入狀態 -->
+      <div v-if="loading" class="flex justify-center items-center py-20">
+        <div class="text-center">
+          <span class="loading loading-spinner loading-lg text-primary"></span>
+          <p class="mt-4 text-lg">載入站點資料中...</p>
         </div>
+      </div>
 
-        <div v-else-if="error" class="error">
-          <p>{{ error }}</p>
-          <button @click="fetchStations" class="retry-btn">重新載入</button>
-        </div>
+      <!-- 錯誤狀態 -->
+      <div v-else-if="error" class="alert alert-error">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ error }}</span>
+        <button @click="fetchStations" class="btn btn-sm">重新載入</button>
+      </div>
 
-        <div v-else-if="filteredStations.length === 0" class="no-results">
-          <p>找不到符合條件的站點</p>
-        </div>
+      <!-- 無結果 -->
+      <div v-else-if="filteredStations.length === 0" class="alert alert-info">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span>{{ showFavoritesOnly ? '尚未收藏任何站點' : '找不到符合條件的站點' }}</span>
+      </div>
 
-        <div v-else class="stations-grid">
-          <div 
-            v-for="station in paginatedStations" 
-            :key="station.sno"
-            class="station-card"
-            :class="getStationClass(station)"
-          >
-            <div class="station-header">
-              <h3 class="station-name">{{ station.sna }}</h3>
-              <span class="station-status" :class="getStatusClass(station.act)">
-                {{ station.act === '1' ? '營運中' : '暫停' }}
-              </span>
+      <!-- 站點卡片網格 -->
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div 
+          v-for="station in paginatedStations" 
+          :key="station.sno"
+          class="card glass-card shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+          :class="getStationCardClass(station)"
+        >
+          <div class="card-body p-5">
+            <!-- 站點標題和收藏按鈕 -->
+            <div class="flex justify-between items-start mb-3">
+              <h3 class="card-title text-lg leading-tight">{{ station.sna }}</h3>
+              <button 
+                @click="toggleFavorite(station)" 
+                class="btn btn-ghost btn-sm btn-circle"
+                :class="isFavorite(station.sno) ? 'text-error' : 'text-base-content/50'"
+              >
+                {{ isFavorite(station.sno) ? '❤️' : '🤍' }}
+              </button>
             </div>
             
-            <div class="station-info">
-              <div class="info-row">
-                <span class="info-label">區域：</span>
-                <span class="info-value">{{ station.sarea }}</span>
+            <!-- 營運狀態 -->
+            <div class="flex justify-between items-center mb-4">
+              <div class="badge" :class="getStatusBadgeClass(station.act)">
+                {{ station.act === '1' ? '營運中' : '暫停' }}
               </div>
-              <div class="info-row">
-                <span class="info-label">地址：</span>
-                <span class="info-value">{{ station.ar }}</span>
+              <div class="text-sm opacity-70">{{ station.sarea }}</div>
+            </div>
+            
+            <!-- 地址 -->
+            <div class="text-sm opacity-80 mb-4 line-clamp-2">
+              📍 {{ station.ar }}
+            </div>
+
+            <!-- 車輛資訊 -->
+            <div class="grid grid-cols-3 gap-2 mb-4">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-success">{{ station.available_rent_bikes }}</div>
+                <div class="text-xs opacity-70">可借</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-info">{{ station.available_return_bikes }}</div>
+                <div class="text-xs opacity-70">可還</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold opacity-50">{{ station.Quantity }}</div>
+                <div class="text-xs opacity-70">總數</div>
               </div>
             </div>
 
-            <div class="station-bikes">
-              <div class="bike-info">
-                <div class="bike-count available">
-                  <span class="count">{{ station.sbi }}</span>
-                  <span class="label">可借</span>
-                </div>
-                <div class="bike-count spaces">
-                  <span class="count">{{ station.bemp }}</span>
-                  <span class="label">可還</span>
-                </div>
-                <div class="bike-count total">
-                  <span class="count">{{ station.tot }}</span>
-                  <span class="label">總數</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="station-footer">
-              <small class="update-time">
-                更新時間：{{ formatTime(station.mday) }}
-              </small>
+            <!-- 更新時間 -->
+            <div class="text-xs opacity-50 text-center border-t border-base-300 pt-2">
+              🕒 {{ formatTime(station.mday) }}
             </div>
           </div>
         </div>
+      </div>
 
-        <div v-if="totalPages > 1" class="pagination">
+      <!-- 分頁 -->
+      <div v-if="totalPages > 1" class="flex justify-center mt-8">
+        <div class="join">
           <button 
             @click="currentPage = 1" 
             :disabled="currentPage === 1"
-            class="page-btn"
+            class="join-item btn"
           >
             ⟸
           </button>
           <button 
             @click="currentPage--" 
             :disabled="currentPage === 1"
-            class="page-btn"
+            class="join-item btn"
           >
             ⟨
           </button>
           
-          <span class="page-info">
+          <button class="join-item btn btn-active">
             第 {{ currentPage }} 頁，共 {{ totalPages }} 頁
-          </span>
+          </button>
           
           <button 
             @click="currentPage++" 
             :disabled="currentPage === totalPages"
-            class="page-btn"
+            class="join-item btn"
           >
             ⟩
           </button>
           <button 
             @click="currentPage = totalPages" 
             :disabled="currentPage === totalPages"
-            class="page-btn"
+            class="join-item btn"
           >
             ⟹
           </button>
         </div>
       </div>
     </main>
+
+    <!-- Footer -->
+    <footer class="footer footer-center p-10 text-base-content/70 mt-20">
+      <div>
+        <p>© 2025 YouBike 站點查詢系統 - Vue.js 練習專案</p>
+        <p>資料來源：台北市政府開放資料平台</p>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -174,7 +233,41 @@ export default {
     const loading = ref(false)
     const error = ref('')
     const currentPage = ref(1)
-    const itemsPerPage = 12
+    const itemsPerPage = 16
+    const favoriteStations = ref([])
+    const showFavoritesOnly = ref(false)
+
+    // 初始化收藏資料
+    const loadFavorites = () => {
+      const saved = localStorage.getItem('youbike-favorites')
+      if (saved) {
+        favoriteStations.value = JSON.parse(saved)
+      }
+    }
+
+    // 儲存收藏資料
+    const saveFavorites = () => {
+      localStorage.setItem('youbike-favorites', JSON.stringify(favoriteStations.value))
+    }
+
+    // 收藏功能
+    const toggleFavorite = (station) => {
+      const index = favoriteStations.value.findIndex(fav => fav.sno === station.sno)
+      if (index > -1) {
+        favoriteStations.value.splice(index, 1)
+      } else {
+        favoriteStations.value.push({
+          sno: station.sno,
+          sna: station.sna,
+          sarea: station.sarea
+        })
+      }
+      saveFavorites()
+    }
+
+    const isFavorite = (sno) => {
+      return favoriteStations.value.some(fav => fav.sno === sno)
+    }
 
     // 計算屬性
     const areas = computed(() => {
@@ -184,6 +277,12 @@ export default {
 
     const filteredStations = computed(() => {
       let filtered = stations.value
+
+      // 如果只顯示收藏，先過濾收藏站點
+      if (showFavoritesOnly.value) {
+        const favoriteSnos = favoriteStations.value.map(fav => fav.sno)
+        filtered = filtered.filter(station => favoriteSnos.includes(station.sno))
+      }
 
       if (searchKeyword.value) {
         const keyword = searchKeyword.value.toLowerCase()
@@ -211,11 +310,11 @@ export default {
     })
 
     const totalBikes = computed(() => {
-      return filteredStations.value.reduce((sum, station) => sum + parseInt(station.sbi), 0)
+      return filteredStations.value.reduce((sum, station) => sum + parseInt(station.available_rent_bikes || 0), 0)
     })
 
     const totalSpaces = computed(() => {
-      return filteredStations.value.reduce((sum, station) => sum + parseInt(station.bemp), 0)
+      return filteredStations.value.reduce((sum, station) => sum + parseInt(station.available_return_bikes || 0), 0)
     })
 
     // 方法
@@ -225,9 +324,14 @@ export default {
       
       try {
         const response = await axios.get(
-          'https://data.taipei/api/v1/dataset/c6bc8aed-557d-41d5-bfb1-8da24f78f2fb?scope=resourceAquire'
+          'https://tcgbusfs.blob.core.windows.net/dotapp/youbike/v2/youbike_immediate.json'
         )
-        stations.value = response.data.result.results
+        
+        if (Array.isArray(response.data)) {
+          stations.value = response.data
+        } else {
+          throw new Error('API 回傳格式錯誤')
+        }
       } catch (err) {
         error.value = '無法載入站點資料，請檢查網路連線'
         console.error('API錯誤:', err)
@@ -249,34 +353,51 @@ export default {
       fetchStations()
     }
 
-    const getStationClass = (station) => {
-      if (station.act !== '1') return 'inactive'
-      if (parseInt(station.sbi) === 0) return 'no-bikes'
-      if (parseInt(station.bemp) === 0) return 'no-spaces'
-      return 'active'
+    const getStationCardClass = (station) => {
+      if (station.act !== '1') return 'border-l-4 border-l-error'
+      if (parseInt(station.available_rent_bikes || 0) === 0) return 'border-l-4 border-l-warning'
+      if (parseInt(station.available_return_bikes || 0) === 0) return 'border-l-4 border-l-info'
+      return 'border-l-4 border-l-success'
     }
 
-    const getStatusClass = (act) => {
-      return act === '1' ? 'status-active' : 'status-inactive'
+    const getStatusBadgeClass = (act) => {
+      return act === '1' ? 'badge-success' : 'badge-error'
     }
 
     const formatTime = (timestamp) => {
-      const date = new Date(timestamp)
-      return date.toLocaleString('zh-TW', {
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      try {
+        if (!timestamp) return '無資料'
+        
+        if (timestamp.includes('-') && timestamp.includes(':')) {
+          const date = new Date(timestamp)
+          return date.toLocaleString('zh-TW', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        }
+        
+        const date = new Date(timestamp)
+        return date.toLocaleString('zh-TW', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      } catch (e) {
+        return '時間格式錯誤'
+      }
     }
 
     // 監聽篩選變化，重置頁碼
-    watch([searchKeyword, selectedArea], () => {
+    watch([searchKeyword, selectedArea, showFavoritesOnly], () => {
       currentPage.value = 1
     })
 
     // 初始化
     onMounted(() => {
+      loadFavorites()
       fetchStations()
     })
 
@@ -287,6 +408,8 @@ export default {
       loading,
       error,
       currentPage,
+      favoriteStations,
+      showFavoritesOnly,
       areas,
       filteredStations,
       totalPages,
@@ -297,8 +420,10 @@ export default {
       filterStations,
       clearSearch,
       refreshData,
-      getStationClass,
-      getStatusClass,
+      toggleFavorite,
+      isFavorite,
+      getStationCardClass,
+      getStatusBadgeClass,
       formatTime
     }
   }
@@ -306,379 +431,10 @@ export default {
 </script>
 
 <style scoped>
-.app {
-  min-height: 100vh;
-  padding: 20px;
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.header h1 {
-  color: white;
-  font-size: 2.5em;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-}
-
-.bike-icon {
-  font-size: 1.2em;
-}
-
-.main-content {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.search-section {
-  background: rgba(255,255,255,0.95);
-  padding: 25px;
-  border-radius: 15px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-  margin-bottom: 25px;
-}
-
-.search-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.input-group {
-  position: relative;
-  flex: 1;
-  min-width: 250px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 12px 40px 12px 15px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.3s;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.clear-btn {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #999;
-  cursor: pointer;
-  font-size: 18px;
-}
-
-.filter-group {
-  display: flex;
-  gap: 10px;
-}
-
-.area-select {
-  padding: 12px 15px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  font-size: 16px;
-  min-width: 140px;
-}
-
-.refresh-btn {
-  padding: 12px 20px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background 0.3s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.refresh-btn:hover:not(:disabled) {
-  background: #5a67d8;
-}
-
-.refresh-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.stats {
-  display: flex;
-  justify-content: space-around;
-  text-align: center;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.stat-number {
-  font-size: 2em;
-  font-weight: bold;
-  color: #667eea;
-}
-
-.stat-label {
-  color: #666;
-  margin-top: 5px;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: white;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(255,255,255,0.3);
-  border-top: 4px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.error {
-  text-align: center;
-  padding: 40px;
-  color: white;
-}
-
-.retry-btn {
-  margin-top: 15px;
-  padding: 10px 20px;
-  background: #ff6b6b;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.no-results {
-  text-align: center;
-  padding: 40px;
-  color: white;
-  font-size: 1.2em;
-}
-
-.stations-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 20px;
-}
-
-.station-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.station-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.station-card.inactive {
-  opacity: 0.6;
-  border-left: 4px solid #ff6b6b;
-}
-
-.station-card.no-bikes {
-  border-left: 4px solid #ffa726;
-}
-
-.station-card.no-spaces {
-  border-left: 4px solid #66bb6a;
-}
-
-.station-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.station-name {
-  color: #333;
-  font-size: 1.2em;
-  margin: 0;
-}
-
-.station-status {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.9em;
-  font-weight: bold;
-}
-
-.status-active {
-  background: #e8f5e8;
-  color: #2e7d32;
-}
-
-.status-inactive {
-  background: #ffebee;
-  color: #c62828;
-}
-
-.station-info {
-  margin-bottom: 15px;
-}
-
-.info-row {
-  margin-bottom: 8px;
-  font-size: 0.95em;
-}
-
-.info-label {
-  color: #666;
-  font-weight: 500;
-}
-
-.info-value {
-  color: #333;
-}
-
-.bike-info {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 15px;
-}
-
-.bike-count {
-  text-align: center;
-  flex: 1;
-}
-
-.bike-count .count {
-  display: block;
-  font-size: 1.8em;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.available .count {
-  color: #4caf50;
-}
-
-.spaces .count {
-  color: #2196f3;
-}
-
-.total .count {
-  color: #9e9e9e;
-}
-
-.bike-count .label {
-  font-size: 0.9em;
-  color: #666;
-}
-
-.station-footer {
-  border-top: 1px solid #eee;
-  padding-top: 10px;
-}
-
-.update-time {
-  color: #999;
-  font-size: 0.85em;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-  margin-top: 30px;
-  padding: 20px;
-}
-
-.page-btn {
-  padding: 8px 12px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.page-btn:hover:not(:disabled) {
-  background: #f0f0f0;
-}
-
-.page-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-info {
-  color: white;
-  font-weight: 500;
-}
-
-/* 響應式設計 */
-@media (max-width: 768px) {
-  .app {
-    padding: 10px;
-  }
-  
-  .header h1 {
-    font-size: 2em;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .search-controls {
-    flex-direction: column;
-  }
-  
-  .filter-group {
-    flex-direction: column;
-  }
-  
-  .stats {
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .stations-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .bike-info {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .pagination {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>

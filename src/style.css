@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-base-200 min-h-screen;
+  }
+}
+
+@layer components {
+  .gradient-bg {
+    background: linear-gradient(135deg, #1f2937 0%, #374151 50%, #111827 100%);
+  }
+  
+  .glass-card {
+    @apply bg-base-100/80 backdrop-blur-sm border border-base-300/50;
+  }
+  
+  .bike-icon-animate {
+    animation: bounce 2s infinite;
+  }
+  
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+}
