@@ -4,23 +4,8 @@
     <div class="navbar glass-card shadow-lg mb-6">
       <div class="navbar-start">
         <h1 class="text-2xl font-bold text-primary flex items-center gap-3">
-          <span class="text-3xl bike-icon-animate">🚲</span>
           YouBike 站點查詢系統
         </h1>
-      </div>
-      <div class="navbar-end">
-        <div class="flex items-center gap-2">
-          <span class="text-sm opacity-70">收藏站點：</span>
-          <div class="badge badge-primary">{{ favoriteStations.length }}</div>
-          <button 
-            @click="showFavoritesOnly = !showFavoritesOnly" 
-            class="btn btn-sm btn-outline"
-            :class="showFavoritesOnly ? 'btn-primary' : ''"
-          >
-            <span class="text-lg">{{ showFavoritesOnly ? '💙' : '🤍' }}</span>
-            {{ showFavoritesOnly ? '顯示全部' : '只看收藏' }}
-          </button>
-        </div>
       </div>
     </div>
 
@@ -57,6 +42,19 @@
                 </option>
               </select>
             </div>
+
+            <!-- 收藏功能按鈕 -->
+            <div class="form-control">
+              <button 
+                @click="showFavoritesOnly = !showFavoritesOnly" 
+                class="btn btn-outline btn-primary"
+                :class="showFavoritesOnly ? 'btn-active' : ''"
+              >
+                <span class="text-lg">{{ showFavoritesOnly ? '💙' : '🤍' }}</span>
+                {{ showFavoritesOnly ? '顯示全部' : '只看收藏' }}
+                <div class="badge badge-primary ml-2">{{ favoriteStations.length }}</div>
+              </button>
+            </div>
             
             <button @click="refreshData" class="btn btn-primary" :disabled="loading">
               <span v-if="loading" class="loading loading-spinner loading-sm"></span>
@@ -81,6 +79,11 @@
               <div class="stat-figure text-info text-3xl">🅿️</div>
               <div class="stat-title">可還空位</div>
               <div class="stat-value text-info">{{ totalSpaces }}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-figure text-accent text-3xl">⭐</div>
+              <div class="stat-title">收藏站點</div>
+              <div class="stat-value text-accent">{{ favoriteStations.length }}</div>
             </div>
           </div>
         </div>
@@ -120,16 +123,9 @@
           :class="getStationCardClass(station)"
         >
           <div class="card-body p-5">
-            <!-- 站點標題和收藏按鈕 -->
-            <div class="flex justify-between items-start mb-3">
+            <!-- 站點標題 -->
+            <div class="mb-3">
               <h3 class="card-title text-lg leading-tight">{{ station.sna }}</h3>
-              <button 
-                @click="toggleFavorite(station)" 
-                class="btn btn-ghost btn-sm btn-circle"
-                :class="isFavorite(station.sno) ? 'text-error' : 'text-base-content/50'"
-              >
-                {{ isFavorite(station.sno) ? '❤️' : '🤍' }}
-              </button>
             </div>
             
             <!-- 營運狀態 -->
@@ -159,6 +155,17 @@
                 <div class="text-2xl font-bold opacity-50">{{ station.Quantity }}</div>
                 <div class="text-xs opacity-70">總數</div>
               </div>
+            </div>
+
+            <!-- 收藏按鈕 -->
+            <div class="mb-4">
+              <button 
+                @click="toggleFavorite(station)" 
+                class="btn btn-sm w-full"
+                :class="isFavorite(station.sno) ? 'btn-error' : 'btn-outline btn-primary'"
+              >
+                {{ isFavorite(station.sno) ? '取消收藏' : '收藏' }}
+              </button>
             </div>
 
             <!-- 更新時間 -->
